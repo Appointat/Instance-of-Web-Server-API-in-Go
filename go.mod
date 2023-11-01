@@ -1,3 +1,3 @@
-module github.com/appointat/Instance-of-Web-Server-API-in-Go
+module Instance_of_Web_Server_API_in_Go
 
 go 1.21.1
