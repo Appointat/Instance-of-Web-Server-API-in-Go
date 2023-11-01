@@ -1,7 +1,7 @@
 //This file defines the types used in communication between the client and the server.
 //The 3 requests are: ballot, vote, and result(request for the result of the ballot).
 
-package src
+package modules
 
 import "time"
 
@@ -27,7 +27,7 @@ type NewBallotResponse struct {
 type VoteRequest struct {
 	AgentID  string `json:"agent-id"`
 	BallotID string `json:"ballot-id"`
-	Choice   []int  `json:"prefs"`
+	Prefs    []int  `json:"prefs"`
 	Options  []int  `json:"options,omitempty"` //Options is marked with omiteempty because right now I don't know its purpose
 }
 
@@ -41,5 +41,6 @@ type ResultRequest struct {
 
 //ResultResponse is the response for the result of the ballot
 type ResultResponse struct {
-	Choice []int `json:"choice"`
+	Winner  int   `json:"winner,omitempty"`
+	Ranking []int `json:"ranking,omitempty"`
 }
