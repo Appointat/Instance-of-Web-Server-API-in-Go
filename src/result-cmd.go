@@ -28,6 +28,7 @@ func handleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: Add your logic for processing the result here
 	// Mock judgement for ballot-id. This is just for demonstration,
 	// in reality, you might need to query a database or do other operations
 	if request.BallotID == "scrutin12" {
