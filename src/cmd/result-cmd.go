@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"src/types"
 )
 
 // Structure for the request payload
@@ -22,7 +23,7 @@ func handleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request ResultRequest
+	var request types.ResultRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
