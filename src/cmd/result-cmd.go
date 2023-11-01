@@ -1,21 +1,10 @@
 package main
 
 import (
+	"Instance_of_Web_Server_API_in_Go/src/modules"
 	"encoding/json"
 	"net/http"
-	"src/types"
 )
-
-// Structure for the request payload
-type ResultRequest struct {
-	BallotID string `json:"ballot-id"`
-}
-
-// Structure for the response payload
-type ResultResponse struct {
-	Winner  int   `json:"winner,omitempty"`
-	Ranking []int `json:"ranking,omitempty"`
-}
 
 func handleResult(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -23,7 +12,7 @@ func handleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request types.ResultRequest
+	var request modules.ResultRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -34,7 +23,7 @@ func handleResult(w http.ResponseWriter, r *http.Request) {
 	// in reality, you might need to query a database or do other operations
 	if request.BallotID == "scrutin12" {
 		// If the ballot-id is "scrutin12", return the sample data
-		response := ResultResponse{
+		response := modules.ResultResponse{
 			Winner:  4,
 			Ranking: []int{2, 1, 4, 3},
 		}
