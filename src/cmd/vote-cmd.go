@@ -1,16 +1,10 @@
 package main
 
 import (
+	"Instance_of_Web_Server_API_in_Go/src/modules"
 	"encoding/json"
 	"net/http"
 )
-
-type VoteRequest struct {
-	AgentID  string `json:"agent-id"`
-	BallotID string `json:"ballot-id"`
-	Prefs    []int  `json:"prefs"`
-	Options  []int  `json:"options,omitempty"`
-}
 
 func handleVote(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -18,7 +12,7 @@ func handleVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request VoteRequest
+	var request modules.VoteRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
