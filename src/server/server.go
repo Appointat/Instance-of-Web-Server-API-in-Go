@@ -326,7 +326,6 @@ func (s *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
 	case "Condorcet":
 		ballot.Condorcet()
 	}
-	s.Ballots[req.BallotID] = ballot
 	var response modules.ResultResponse
 	if ballot.Winner == -1 {
 		response = modules.ResultResponse{}
