@@ -112,3 +112,76 @@ func (s *Server) handleBallot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
+
+func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
+	var req modules.VoteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	//check if the ballot ID is valid
+	ballot, ok := s.Ballots[req.BallotID]
+	if !ok {
+		http.Error(w, "ballot ID not found", http.StatusBadRequest)
+		return
+	}
+
+	//check if the voter ID is valid
+	validVoterID := false
+	for _, voterID := range ballot.VoterIDs {
+		if voterID == req.AgentID {
+			validVoterID = true
+			break
+		}
+	}
+	if !validVoterID {
+		http.Error(w, "this voter ID is not allowed to vote", http.StatusBadRequest)
+		return
+	}
+
+	//check the time now is still within the deadline,if not return 503
+	if ballot.Deadline.Before(time.Now()) {
+		http.Error(w, "too late", http.StatusServiceUnavailable)
+		return
+	}
+
+	//check if the number of preferences is valid
+	if len(req.Prefs) != ballot.Alts {
+		http.Error(w, "invalid number of preferences", http.StatusBadRequest)
+		return
+	}
+	//check if the preferences are valid
+	seen := make(map[int]bool)
+	for _, pref := range req.Prefs {
+		if pref < 0 || pref >= ballot.Alts {
+			http.Error(w, "invalid preference", http.StatusBadRequest)
+			return
+		}
+		if seen[pref] {
+			http.Error(w, "duplicate preference", http.StatusBadRequest)
+			return
+		}
+		seen[pref] = true
+	}
+	//check if all the alternatives are covered
+	if len(seen) != ballot.Alts {
+		http.Error(w, "not all alternatives are covered", http.StatusBadRequest)
+		return
+	}
+
+	//check if the vote has already been casted, if so return 403
+	_, ok = ballot.Votes[req.AgentID]
+	if ok {
+		http.Error(w, "vote already casted", http.StatusForbidden)
+		return
+	}
+
+	//cast the vote
+	ballot.Votes[req.AgentID] = req.Prefs
+	s.Ballots[req.BallotID] = ballot
+
+	//return 200
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("vote pris en compte"))
+}
