@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Instance_of_Web_Server_API_in_Go/src/modules"
+	modules "Instance_of_Web_Server_API_in_Go/src/types"
 	"encoding/json"
 	"net/http"
 )
