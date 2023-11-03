@@ -10,7 +10,7 @@ import (
 func main() {
 	server := server.NewServer()
 
-	http.HandleFunc("/ballot", server.HandleBallot)
+	http.HandleFunc("/new_ballot", server.HandleBallot)
 	http.HandleFunc("/vote", server.HandleVote)
 	http.HandleFunc("/result", server.HandleResult)
 

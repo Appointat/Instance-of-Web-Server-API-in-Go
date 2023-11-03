@@ -14,27 +14,27 @@ type Ballot struct {
 	ID       string
 	Rule     string
 	Deadline time.Time
-	VoterIDs []string
+	voterIDs []string
 	Votes    map[string][]int
 	Alts     int
 	TieBreak []int
 	Winner   int
 }
 
-//method for ballot
-
+// method for ballot
 type Server struct {
-	Ballots      map[string]Ballot
+	ballots      map[string]Ballot
+	numBallots   int //the number of ballots
 	BallotNextID int //the next ballot ID to be assigned
-	NumBallots   int //the number of ballots
+	validRules   []string
 }
 
 // methods for server
 func NewServer() *Server {
-	return &Server{make(map[string]Ballot), 0, 0}
+	return &Server{make(map[string]Ballot), 0, 0, []string{"Majority", "Borda", "Condorcet"}}
 }
 
-func (s *Server) HandleBallot(w http.ResponseWriter, r *http.Request) {
+func (server *Server) HandleBallot(w http.ResponseWriter, r *http.Request) {
 	//Analyse the request
 	var req modules.NewBallotRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -43,9 +43,8 @@ func (s *Server) HandleBallot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//check if the rule is valid, here only Majority, Borda, Condorcet are allowed
-	validRules := []string{"Majority", "Borda", "Condorcet"}
 	valid := false
-	for _, rule := range validRules {
+	for _, rule := range server.validRules {
 		if req.Rule == rule {
 			valid = true
 			break
@@ -75,7 +74,7 @@ func (s *Server) HandleBallot(w http.ResponseWriter, r *http.Request) {
 	//create a map to keep track of the seen alternatives
 	seen := make(map[int]bool)
 	for _, alt := range req.TieBreak {
-		if alt < 0 || alt >= req.Alts {
+		if alt <= 0 || alt > req.Alts {
 			http.Error(w, "Invalid alternative in the tie-break array", http.StatusBadRequest)
 			return
 		}
@@ -91,24 +90,23 @@ func (s *Server) HandleBallot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//affection of the ballot ID, the ballot ID is "scrutin" + the next ballot ID(from number to string)
-	ballotID := fmt.Sprintf("scrutin%d", s.BallotNextID)
+	//convert server.numBallots to string to be the ballot ID
+	ballotID := fmt.Sprint(req.Rule, server.numBallots)
 
-	s.BallotNextID++
-	s.NumBallots++
+	server.numBallots++
 
 	//create a new ballot
 	ballot := Ballot{
 		ID:       ballotID,
 		Rule:     req.Rule,
 		Deadline: req.Deadline,
-		VoterIDs: req.VoterIDs,
+		voterIDs: req.VoterIDs,
 		Votes:    make(map[string][]int),
 		Alts:     req.Alts,
 		TieBreak: req.TieBreak,
 		Winner:   -1,
 	}
-	s.Ballots[ballotID] = ballot
+	server.ballots[ballotID] = ballot
 
 	//return the ballot ID
 	response := modules.NewBallotResponse{
@@ -118,7 +116,7 @@ func (s *Server) HandleBallot(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *Server) HandleVote(w http.ResponseWriter, r *http.Request) {
+func (server *Server) HandleVote(w http.ResponseWriter, r *http.Request) {
 	var req modules.VoteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -126,7 +124,7 @@ func (s *Server) HandleVote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//check if the ballot ID is valid
-	ballot, ok := s.Ballots[req.BallotID]
+	ballot, ok := server.ballots[req.BallotID]
 	if !ok {
 		http.Error(w, "ballot ID not found", http.StatusBadRequest)
 		return
@@ -134,7 +132,7 @@ func (s *Server) HandleVote(w http.ResponseWriter, r *http.Request) {
 
 	//check if the voter ID is valid
 	validVoterID := false
-	for _, voterID := range ballot.VoterIDs {
+	for _, voterID := range ballot.voterIDs {
 		if voterID == req.AgentID {
 			validVoterID = true
 			break
@@ -159,7 +157,7 @@ func (s *Server) HandleVote(w http.ResponseWriter, r *http.Request) {
 	//check if the preferences are valid
 	seen := make(map[int]bool)
 	for _, pref := range req.Prefs {
-		if pref < 0 || pref >= ballot.Alts {
+		if pref <= 0 || pref > ballot.Alts {
 			http.Error(w, "invalid preference", http.StatusBadRequest)
 			return
 		}
@@ -183,15 +181,14 @@ func (s *Server) HandleVote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//cast the vote
-	ballot.Votes[req.AgentID] = req.Prefs
-	s.Ballots[req.BallotID] = ballot
+	server.ballots[req.BallotID].Votes[req.AgentID] = req.Prefs
 
 	//return 200
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("vote pris en compte"))
 }
 
-func (s *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
+func (server *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
 	var req modules.ResultRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -199,7 +196,7 @@ func (s *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//check if the ballot ID is valid, return 404 if not
-	ballot, ok := s.Ballots[req.BallotID]
+	ballot, ok := server.ballots[req.BallotID]
 	if !ok {
 		http.Error(w, "ballot ID not found", http.StatusNotFound)
 		return
@@ -212,23 +209,52 @@ func (s *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//Calculate the result
+	// validRules := []string{"Majority", "Borda", "Condorcet"}
+	var response modules.ResultResponse
+	rankings := make([]int, 0)
 	switch ballot.Rule {
 	case "Majority":
-		ballot.Winner, _ = methods.TestMajoritySCF()
+		var prefs methods.Profile
+		for voterID := range ballot.Votes {
+			prefs = append(prefs, ballot.Votes[voterID])
+		}
+		var winners []int
+		winners, _ = methods.MajoritySCF(prefs)
+		ballot := server.ballots[req.BallotID]
+		ballot.Winner = winners[0]
+		server.ballots[req.BallotID] = ballot
+
+		candidate_with_ranking, _ := methods.MajoritySWF(prefs)
+		for candidate, ranking := range candidate_with_ranking {
+			print(candidate, ranking)
+		}
+		for i := 0; i < len(candidate_with_ranking); i++ {
+			for candidate, ranking := range candidate_with_ranking {
+				if ranking <= i {
+					rankings = append(rankings, candidate)
+				}
+			}
+		}
+		for i := 0; i < len(rankings); i++ {
+			fmt.Println(rankings[i])
+		}
+
 		// case "Borda":
 		// 	methods.Borda()
 		// case "Condorcet":
 		// 	methods.Condorcet()
 	}
-	var response modules.ResultResponse
+
+	ballot = server.ballots[req.BallotID]
 	if ballot.Winner == -1 {
 		response = modules.ResultResponse{}
 	} else {
 		response = modules.ResultResponse{
 			Winner:  ballot.Winner,
-			Ranking: []int{},
+			Ranking: rankings,
 		}
 	}
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }

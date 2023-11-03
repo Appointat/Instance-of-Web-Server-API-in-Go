@@ -11,9 +11,9 @@ import "time"
 type NewBallotRequest struct {
 	Rule     string    `json:"rule"`
 	Deadline time.Time `json:"deadline"`
-	VoterIDs []string  `json:"voterIDs"`
-	Alts     int       `json:"alts"`     //number of alternatives that can be chosen
-	TieBreak []int     `json:"tieBreak"` //if there is a tie, the alternative with the lowest index in this array wins
+	VoterIDs []string  `json:"voter-ids"`
+	Alts     int       `json:"alts"`      //number of alternatives that can be chosen
+	TieBreak []int     `json:"tie-break"` //if there is a tie, the alternative with the lowest index in this array wins
 }
 
 //NewBallotResponse is the response for creating a new ballot
@@ -41,6 +41,6 @@ type ResultRequest struct {
 
 //ResultResponse is the response for the result of the ballot
 type ResultResponse struct {
-	Winner  int   `json:"winner,omitempty"`
-	Ranking []int `json:"ranking,omitempty"`
+	Winner  int   `json:"winner"`
+	Ranking []int `json:"ranking"`
 }

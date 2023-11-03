@@ -10,22 +10,21 @@ import (
 /*
 Types of basic methods
 
-Les alternatives seront représentées par des entiers.
-Les profils de préférences sont telles que si profile est un profil, profile[12] représentera les préférences du votant 12. Les alternatives sont classée de la préférée à la moins préférée :  profile[12][0] represente l'alternative préférée du votant 12.
-Enfin, les méthodes de vote renvoient un décompte sous forme d'une map qui associe à chaque alternative un entier : plus cet entier est élevé, plus l'alternative a de points et plus elle est préférée pour le groupe compte tenu de la méthode considérée.
+Les ints seront représentées par des entiers.
+Les profils de préférences sont telles que si profile est un profil, profile[12] représentera les préférences du votant 12. Les ints sont classée de la préférée à la moins préférée :  profile[12][0] represente l'int préférée du votant 12.
+Enfin, les méthodes de vote renvoient un décompte sous forme d'une map qui associe à chaque int un entier : plus cet entier est élevé, plus l'int a de points et plus elle est préférée pour le groupe compte tenu de la méthode considérée.
 */
-type Alternative int
-type Profile [][]Alternative
-type Count map[Alternative]int // map associant à chaque alternative un entier
+type Profile [][]int
+type Count map[int]int // map associant à chaque int un entier
 
 // e.g. of type
 // profile[12][0] is the first choice of voter 12
 // profile[12][1] is the second choice of voter 12
-// Count is a map associating each alternative with an integer
-// e.g. count[12] = 3 means that alternative 12 has 3 votes
+// Count is a map associating each int with an integer
+// e.g. count[12] = 3 means that int 12 has 3 votes
 
 // return the index of the alt in the prefs, or -1 if not found
-func rank(alt Alternative, prefs []Alternative) int {
+func rank(alt int, prefs []int) int {
 	for i, a := range prefs {
 		if a == alt {
 			return i
@@ -35,7 +34,7 @@ func rank(alt Alternative, prefs []Alternative) int {
 }
 
 // return true if alt1 is preferred to alt2 in the profile
-func isPref(alt1, alt2 Alternative, prefs []Alternative) bool {
+func isPref(alt1, alt2 int, prefs []int) bool {
 	//we need to consider the situation where alt1 or alt2 is not in the preference list
 	rank1 := rank(alt1, prefs)
 	rank2 := rank(alt2, prefs)
@@ -54,13 +53,13 @@ func isPref(alt1, alt2 Alternative, prefs []Alternative) bool {
 	return rank1 < rank2
 }
 
-// return the best alternatives for the given profile in order of preference
-func maxCount(count Count) (bestAlts []Alternative) {
+// return the best ints for the given profile in order of preference
+func maxCount(count Count) (bestAlts []int) {
 	max := 0
 	for alt, cnt := range count {
 		if cnt > max {
 			max = cnt
-			bestAlts = []Alternative{alt}
+			bestAlts = []int{alt}
 			// TODO: maxCount函数应该根据test函数应返回一个map，但是题目要求却返回一个数组
 		} else if cnt == max {
 			bestAlts = append(bestAlts, alt)
@@ -84,19 +83,19 @@ func checkProfile(prefs Profile) error {
 			return fmt.Errorf("preference list %d is incomplete", i)
 		}
 
-		seen := make(map[Alternative]bool)
+		seen := make(map[int]bool)
 		for _, alt := range pref {
 			if seen[alt] {
-				return fmt.Errorf("alternative %d appears more than once in preference list %d", alt, i)
+				return fmt.Errorf("int %d appears more than once in preference list %d", alt, i)
 			}
 			seen[alt] = true
 		}
 
-		// Ensure that each alternative is presented in the preference list
+		// Ensure that each int is presented in the preference list
 		for _, pref := range prefs {
 			for _, alt := range pref {
 				if !seen[alt] {
-					return fmt.Errorf("alternative %d is missing in preference list %d", alt, i)
+					return fmt.Errorf("int %d is missing in preference list %d", alt, i)
 				}
 			}
 		}
@@ -106,8 +105,8 @@ func checkProfile(prefs Profile) error {
 }
 
 // check if the given profile, e.g. that they are all complete and that each alt only appears once per pref
-func checkProfileAlternative(prefs Profile, alts []Alternative) error {
-	altMap := make(map[Alternative]bool)
+func checkProfileint(prefs Profile, alts []int) error {
+	altMap := make(map[int]bool)
 	for _, alt := range alts {
 		altMap[alt] = true
 	}
@@ -118,13 +117,13 @@ func checkProfileAlternative(prefs Profile, alts []Alternative) error {
 			return fmt.Errorf("preference list %d is incomplete", i)
 		}
 
-		seen := make(map[Alternative]bool)
+		seen := make(map[int]bool)
 		for _, alt := range pref {
 			if seen[alt] {
-				return fmt.Errorf("alternative %d appears more than once in preference list %d", alt, i)
+				return fmt.Errorf("int %d appears more than once in preference list %d", alt, i)
 			}
 			if !altMap[alt] {
-				return fmt.Errorf("alternative %d is not in the alternative list", alt)
+				return fmt.Errorf("int %d is not in the int list", alt)
 			}
 			seen[alt] = true
 		}
@@ -138,7 +137,7 @@ Process of the vote
 
 We distinguish between Social Welfare Functions (SWF),
 which return a count based on a profile, and Social Choice Functions (social choice function, SCF)
-which return only the preferred alternatives.
+which return only the preferred ints.
 */
 // return the count for the given profile
 func SWF(p Profile) (count Count, err error) {
@@ -156,8 +155,8 @@ func SWF(p Profile) (count Count, err error) {
 	return count, nil
 }
 
-// return the best alternatives for the given profile
-func SCF(p Profile) (bestAlts []Alternative, err error) {
+// return the best ints for the given profile
+func SCF(p Profile) (bestAlts []int, err error) {
 	count, err := SWF(p)
 	if err != nil {
 		return nil, err
@@ -179,7 +178,7 @@ func MajoritySWF(p Profile) (count Count, err error) {
 	return count, nil
 }
 
-func MajoritySCF(p Profile) (bestAlts []Alternative, err error) {
+func MajoritySCF(p Profile) (bestAlts []int, err error) {
 	count, err := MajoritySWF(p)
 	if err != nil {
 		return nil, err
@@ -204,7 +203,7 @@ func BordaSWF(p Profile) (count Count, err error) {
 }
 
 // 这个阈值是每个选民可以选择的最大的候选人数
-func BordaSCF(p Profile) (bestAlts []Alternative, err error) {
+func BordaSCF(p Profile) (bestAlts []int, err error) {
 	count, err := BordaSWF(p)
 	if err != nil {
 		return nil, err
@@ -218,9 +217,9 @@ func ApprovalSWF(p Profile, thresholds []int) (count Count, err error) {
 	if err != nil {
 		return nil, err
 	}
-	//the thresholds is the maximum number of alternatives that each voter can choose
-	//if the voter chooses more than the threshold, the alternatives beyond the threshold will be ignored
-	//if the voter chooses less than the threshold, the alternatives he chooses will be counted
+	//the thresholds is the maximum number of ints that each voter can choose
+	//if the voter chooses more than the threshold, the ints beyond the threshold will be ignored
+	//if the voter chooses less than the threshold, the ints he chooses will be counted
 
 	//check if the length of the thresholds is equal to the length of the profile
 	if len(thresholds) != len(p) {
@@ -236,7 +235,7 @@ func ApprovalSWF(p Profile, thresholds []int) (count Count, err error) {
 	return count, nil
 }
 
-func ApprovalSCF(p Profile, thresholds []int) (bestAlts []Alternative, err error) {
+func ApprovalSCF(p Profile, thresholds []int) (bestAlts []int, err error) {
 	count, err := ApprovalSWF(p, thresholds)
 	if err != nil {
 		return nil, err
@@ -244,17 +243,17 @@ func ApprovalSCF(p Profile, thresholds []int) (bestAlts []Alternative, err error
 	return maxCount(count), nil
 }
 
-// The tie-breaking method, which returns the best alternative among the given alternatives
+// The tie-breaking method, which returns the best int among the given ints
 // we use the random method to break the tie
-func TieBreak(alts []Alternative) (Alternative, error) {
+func TieBreak(alts []int) (int, error) {
 	if len(alts) == 0 {
-		return 0, errors.New("empty alternatives list")
+		return 0, errors.New("empty ints list")
 	}
 
 	// Seed the random number generator
 	rand.Seed(time.Now().UnixNano())
 
-	// Randomly select an alternative from the list
+	// Randomly select an int from the list
 	selected := alts[rand.Intn(len(alts))]
 
 	return selected, nil
@@ -263,8 +262,8 @@ func TieBreak(alts []Alternative) (Alternative, error) {
 //这里要我们创建多种TieBreak函数并实现工厂模式，我省略掉了
 
 // SWFFactory is a function that returns a SWF
-func SWFFactory(SWF func(p Profile) (Count, error), TieBreak func([]Alternative) (Alternative, error)) func(Profile) ([]Alternative, error) {
-	return func(p Profile) ([]Alternative, error) {
+func SWFFactory(SWF func(p Profile) (Count, error), TieBreak func([]int) (int, error)) func(Profile) ([]int, error) {
+	return func(p Profile) ([]int, error) {
 		count, err := SWF(p)
 		if err != nil {
 			return nil, err
@@ -280,18 +279,18 @@ func SWFFactory(SWF func(p Profile) (Count, error), TieBreak func([]Alternative)
 			if err != nil {
 				return nil, err
 			}
-			return []Alternative{bestAlt}, nil
+			return []int{bestAlt}, nil
 		}
 
-		//if there is no best alternative, return error
-		return nil, fmt.Errorf("there is no best alternative")
+		//if there is no best int, return error
+		return nil, fmt.Errorf("there is no best int")
 	}
 }
 
 // SCFFactory is a function that returns a SCF
 
-func SCFFactory(scf func(p Profile) ([]Alternative, error), TieBreak func([]Alternative) (Alternative, error)) func(Profile) (Alternative, error) {
-	return func(p Profile) (Alternative, error) {
+func SCFFactory(scf func(p Profile) ([]int, error), TieBreak func([]int) (int, error)) func(Profile) (int, error) {
+	return func(p Profile) (int, error) {
 		bestAlts, err := scf(p)
 		if err != nil {
 			return 0, err
@@ -306,27 +305,27 @@ func SCFFactory(scf func(p Profile) ([]Alternative, error), TieBreak func([]Alte
 			}
 			return bestAlt, nil
 		}
-		return 0, fmt.Errorf("there is no best alternative")
+		return 0, fmt.Errorf("there is no best int")
 	}
 }
 
-// To find the Condorcet winner, we need to compare each pair of alternatives.
+// To find the Condorcet winner, we need to compare each pair of ints.
 // the return value is void or the Condorcet winner
-func CondorcetWinner(p Profile) (bestAlt []Alternative, err error) {
+func CondorcetWinner(p Profile) (bestAlt []int, err error) {
 	err = checkProfile(p)
 	if err != nil {
 		return nil, err
 	}
 
 	numAlts := len(p[0])
-	//the number of wins of each alternative
+	//the number of wins of each int
 	wins := make([]int, numAlts)
 	for i := 0; i < numAlts; i++ {
 		for j := 0; j < numAlts; j++ {
 			if i != j {
 				winsForI := 0
 				for _, voterPref := range p {
-					if isPref(Alternative(i+1), Alternative(j+1), voterPref) {
+					if isPref(int(i+1), int(j+1), voterPref) {
 						winsForI++
 					}
 				}
@@ -340,7 +339,7 @@ func CondorcetWinner(p Profile) (bestAlt []Alternative, err error) {
 	//find the Condorcet winner
 	for i, win := range wins {
 		if win == numAlts-1 {
-			bestAlt = append(bestAlt, Alternative(i+1))
+			bestAlt = append(bestAlt, int(i+1))
 		}
 	}
 
@@ -362,14 +361,14 @@ func CopelandSWF(p Profile) (count Count, err error) {
 			if i != j {
 				winsForI := 0
 				for _, voterPref := range p {
-					if isPref(Alternative(i), Alternative(j), voterPref) {
+					if isPref(int(i), int(j), voterPref) {
 						winsForI++
 					}
 				}
 				if winsForI > len(p)/2 {
-					count[Alternative(i)]++
+					count[int(i)]++
 				} else if winsForI < len(p)/2 {
-					count[Alternative(i)]--
+					count[int(i)]--
 				}
 			}
 		}
@@ -378,7 +377,7 @@ func CopelandSWF(p Profile) (count Count, err error) {
 	return count, nil
 }
 
-func CopelandSCF(p Profile) (bestAlts []Alternative, err error) {
+func CopelandSCF(p Profile) (bestAlts []int, err error) {
 	count, err := CopelandSWF(p)
 	if err != nil {
 		return nil, err
