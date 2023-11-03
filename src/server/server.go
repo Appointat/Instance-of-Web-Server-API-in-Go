@@ -230,7 +230,7 @@ func (server *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
 		}
 		for i := 0; i < len(candidate_with_ranking); i++ {
 			for candidate, ranking := range candidate_with_ranking {
-				if ranking <= i {
+				if ranking <= i + 1 {
 					rankings = append(rankings, candidate)
 				}
 			}
