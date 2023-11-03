@@ -1,4 +1,4 @@
-package comsoc
+package methods
 
 import (
 	"errors"

@@ -9,9 +9,9 @@ import (
 
 func TestBordaSWF(t *testing.T) {
 	prefs := [][]Alternative{
-		{1, 2, 3},
-		{1, 2, 3},
-		{3, 2, 1},
+		{1, 2, 3}, //[0,1,2]
+		{1, 2, 3}, //[0,1,2]
+		{3, 2, 1}, //[2,1,0]
 	}
 
 	res, _ := BordaSWF(prefs)
