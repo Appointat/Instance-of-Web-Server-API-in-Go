@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 )
 
@@ -225,16 +226,25 @@ func (server *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
 		server.ballots[req.BallotID] = ballot
 
 		candidate_with_ranking, _ := methods.MajoritySWF(prefs)
+
+		type CandidateRankingPair struct {
+			Candidate int
+			Ranking   int
+		}
+		var pairs []CandidateRankingPair
 		for candidate, ranking := range candidate_with_ranking {
-			print(candidate, ranking)
+			pairs = append(pairs, CandidateRankingPair{Candidate: candidate, Ranking: ranking})
 		}
-		for i := 0; i < len(candidate_with_ranking); i++ {
-			for candidate, ranking := range candidate_with_ranking {
-				if ranking <= i + 1 {
-					rankings = append(rankings, candidate)
-				}
-			}
+
+		sort.Slice(pairs, func(i, j int) bool {
+			return pairs[i].Ranking < pairs[j].Ranking
+		})
+
+		rankings = []int{}
+		for _, pair := range pairs {
+			rankings = append(rankings, pair.Candidate)
 		}
+
 		for i := 0; i < len(rankings); i++ {
 			fmt.Println(rankings[i])
 		}
