@@ -245,10 +245,6 @@ func (server *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
 			rankings = append(rankings, pair.Candidate)
 		}
 
-		for i := 0; i < len(rankings); i++ {
-			fmt.Println(rankings[i])
-		}
-
 		// case "Borda":
 		// 	methods.Borda()
 		// case "Condorcet":
