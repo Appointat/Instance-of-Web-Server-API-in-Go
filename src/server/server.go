@@ -4,6 +4,7 @@ import (
 	methods "Instance_of_Web_Server_API_in_Go/src/methods"
 	modules "Instance_of_Web_Server_API_in_Go/src/types"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -215,40 +216,11 @@ func (server *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
 	rankings := make([]int, 0)
 	switch ballot.Rule {
 	case "Majority":
-		var prefs methods.Profile
-		for voterID := range ballot.Votes {
-			prefs = append(prefs, ballot.Votes[voterID])
-		}
-		var winners []int
-		winners, _ = methods.MajoritySCF(prefs)
-		ballot := server.ballots[req.BallotID]
-		ballot.Winner = winners[0]
-		server.ballots[req.BallotID] = ballot
-
-		candidate_with_ranking, _ := methods.MajoritySWF(prefs)
-
-		type CandidateRankingPair struct {
-			Candidate int
-			Ranking   int
-		}
-		var pairs []CandidateRankingPair
-		for candidate, ranking := range candidate_with_ranking {
-			pairs = append(pairs, CandidateRankingPair{Candidate: candidate, Ranking: ranking})
-		}
-
-		sort.Slice(pairs, func(i, j int) bool {
-			return pairs[i].Ranking < pairs[j].Ranking
-		})
-
-		rankings = []int{}
-		for _, pair := range pairs {
-			rankings = append(rankings, pair.Candidate)
-		}
-
-		// case "Borda":
-		// 	methods.Borda()
-		// case "Condorcet":
-		// 	methods.Condorcet()
+		rankings, _ = SortCandidatesByRanking(ballot, req, server, methods.MajoritySCF, methods.MajoritySWF)
+	case "Borda":
+		rankings, _ = SortCandidatesByRanking(ballot, req, server, methods.BordaSCF, methods.BordaSWF)
+	case "Condorcet":
+		rankings, _ = SortCandidatesByRanking(ballot, req, server, methods.CondorcetWinner, methods.CondorcetRanking)
 	}
 
 	ballot = server.ballots[req.BallotID]
@@ -263,4 +235,43 @@ func (server *Server) HandleResult(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+func SortCandidatesByRanking(ballot Ballot, req modules.ResultRequest, server *Server, SCF func(profile methods.Profile) ([]int, error), SWF func(profile methods.Profile) (methods.Count, error)) ([]int, error) {
+	var prefs methods.Profile
+	for voterID := range ballot.Votes {
+		prefs = append(prefs, ballot.Votes[voterID])
+	}
+
+	var winners []int
+	winners, _ = SCF(prefs)
+	if len(winners) == 0 {
+		return nil, errors.New("no winner")
+	}
+
+	_ballot := (*server).ballots[req.BallotID]
+	_ballot.Winner = winners[0]
+	(*server).ballots[req.BallotID] = _ballot
+
+	candidate_with_ranking, _ := SWF(prefs)
+
+	type CandidateRankingPair struct {
+		Candidate int
+		Ranking   int
+	}
+	var pairs []CandidateRankingPair
+	for candidate, ranking := range candidate_with_ranking {
+		pairs = append(pairs, CandidateRankingPair{Candidate: candidate, Ranking: ranking})
+	}
+
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].Ranking < pairs[j].Ranking
+	})
+
+	rankings := []int{}
+	for _, pair := range pairs {
+		rankings = append(rankings, pair.Candidate)
+	}
+
+	return rankings, nil
 }

@@ -346,6 +346,10 @@ func CondorcetWinner(p Profile) (bestAlt []int, err error) {
 	return bestAlt, nil
 }
 
+func CondorcetRanking(p Profile) (count Count, err error) {
+	return nil, nil
+}
+
 // The Copeland method
 // win +1, lose -1, tie 0
 func CopelandSWF(p Profile) (count Count, err error) {
