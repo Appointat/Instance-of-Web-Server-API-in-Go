@@ -26,9 +26,9 @@ Dans la chemin de dossier src, exécute la commande
 ```go
 go run .\launch.go
 ```
-此时浏览器已在8080端口上运行(http://localhost:8080)
+Le serveur est lancé sur le port 8080 (http://localhost:8080)
 ### Créer un ballot
-在 http://localhost:8080/ballot 创建一个投票，执行post命令
+Basculer vers http://localhost:8080/ballot créer un ballot en exécutant la commande POST
 ```json
 {
     "rule": "Majority",
